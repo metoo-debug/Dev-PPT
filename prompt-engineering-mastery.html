@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Engineering Mastery — Claude for Developers</title>
+<style>
+  :root{
+    --bg:#0b0f17;
+    --panel:#141a24;
+    --panel-2:#101520;
+    --border:#232b3a;
+    --text:#e7ecf5;
+    --text-dim:#9aa5b8;
+    --text-faint:#5f6a7f;
+    --blue:#5b9dff;
+    --blue-soft:rgba(91,157,255,0.12);
+    --green:#3ddc84;
+    --green-soft:rgba(61,220,132,0.12);
+    --amber:#ffb545;
+    --amber-soft:rgba(255,181,69,0.12);
+    --mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'Fira Code', Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(1100px 550px at 10% -10%, rgba(91,157,255,0.07), transparent 60%),
+      var(--bg);
+    color:var(--text);
+    font-family:var(--sans);
+    overflow:hidden;
+  }
+  .app{display:flex; flex-direction:column; height:100vh; width:100vw;}
+
+  /* ---------- TOP ---------- */
+  .topbar{
+    flex:0 0 auto;
+    padding:16px 28px 12px;
+    border-bottom:1px solid var(--border);
+    background:var(--panel-2);
+  }
+  .top-row{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:16px;}
+  .deck-name{font-size:13px; color:var(--text-faint); letter-spacing:.02em;}
+  .deck-name b{color:var(--text-dim);}
+  .module-pills{display:flex; gap:6px; flex-wrap:wrap;}
+  .pill{
+    font-size:11.5px; padding:5px 10px; border-radius:20px;
+    background:var(--panel); border:1px solid var(--border); color:var(--text-faint);
+    cursor:pointer; user-select:none; white-space:nowrap; transition:all .15s;
+  }
+  .pill:hover{color:var(--text-dim); border-color:#33405a;}
+  .pill.active{background:var(--blue-soft); border-color:var(--blue); color:var(--blue); font-weight:600;}
+  .progress-track{height:4px; background:var(--border); border-radius:3px; overflow:hidden; cursor:pointer;}
+  .progress-fill{height:100%; background:var(--blue); border-radius:3px; transition:width .25s ease;}
+
+  /* ---------- STAGE ---------- */
+  .stage-wrap{flex:1 1 auto; overflow-y:auto; display:flex; justify-content:center;}
+  .stage{
+    width:100%; max-width:840px;
+    padding:44px 32px 70px;
+    display:flex; flex-direction:column; gap:22px;
+  }
+  .badge-row{display:flex; align-items:center; gap:10px;}
+  .badge{
+    font-size:12px; font-weight:700; letter-spacing:.04em;
+    padding:5px 11px; border-radius:6px; text-transform:uppercase;
+  }
+  .badge.overview{color:var(--text-dim); background:var(--panel); border:1px solid var(--border);}
+  .badge.hook{color:var(--amber); background:var(--amber-soft); border:1px solid rgba(255,181,69,.3);}
+  .badge.idea{color:var(--blue); background:var(--blue-soft); border:1px solid rgba(91,157,255,.3);}
+  .badge.try{color:var(--green); background:var(--green-soft); border:1px solid rgba(61,220,132,.35);}
+  .badge.watch{color:var(--amber); background:var(--amber-soft); border:1px solid rgba(255,181,69,.35);}
+  .badge.rule{color:#ff8383; background:rgba(255,131,131,.1); border:1px solid rgba(255,131,131,.3);}
+  .badge.wrap{color:var(--green); background:var(--green-soft); border:1px solid rgba(61,220,132,.3);}
+
+  h1.title{
+    font-size:clamp(24px,3vw,36px);
+    line-height:1.2; margin:0; font-weight:800; letter-spacing:-0.01em;
+  }
+  .explain{
+    font-size:17.5px; line-height:1.75; color:var(--text-dim); max-width:720px;
+  }
+  .explain strong{color:var(--text); font-weight:600;}
+
+  .analogy-btn{
+    align-self:flex-start;
+    font-size:13px; color:var(--blue); background:var(--blue-soft);
+    border:1px solid rgba(91,157,255,.3); padding:7px 13px; border-radius:7px;
+    cursor:pointer; font-family:var(--sans);
+  }
+  .analogy-box{
+    display:none; font-size:15.5px; line-height:1.6; color:var(--text);
+    background:var(--blue-soft); border:1px solid rgba(91,157,255,.3);
+    border-radius:9px; padding:14px 16px;
+  }
+  .analogy-box.open{display:block;}
+
+  /* code panel */
+  .codepanel{
+    background:var(--panel); border:1px solid var(--border); border-radius:10px; overflow:hidden;
+  }
+  .codepanel .cp-head{
+    padding:9px 14px; font-size:12px; font-weight:600; letter-spacing:.02em;
+    border-bottom:1px solid var(--border); color:var(--text-faint);
+  }
+  .codepanel.weak .cp-head{color:var(--text-faint);}
+  .codepanel.strong .cp-head{color:var(--green);}
+  .codepanel.watch .cp-head{color:var(--amber);}
+  .codepanel pre{
+    margin:0; padding:16px 18px; font-family:var(--mono); font-size:14px; line-height:1.65;
+    color:var(--text); overflow-x:auto;
+  }
+  .codepanel.weak pre{color:var(--text-dim);}
+  .codepanel.strong pre{color:#c9f5dd;}
+  .caption{font-size:14px; color:var(--text-faint); margin-top:-8px;}
+
+  .pair{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:760px){.pair{grid-template-columns:1fr;}}
+  .arrow-between{
+    display:flex; align-items:center; justify-content:center; color:var(--text-faint); font-size:20px;
+  }
+
+  .why-box{
+    display:flex; gap:10px; align-items:flex-start;
+    background:var(--green-soft); border:1px solid rgba(61,220,132,.3); border-radius:9px;
+    padding:13px 16px; font-size:15px; color:var(--text);
+  }
+  .why-box .lbl{color:var(--green); font-weight:700; flex:0 0 auto;}
+
+  .list-simple{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:12px;}
+  .list-simple li{
+    display:flex; gap:12px; font-size:16.5px; line-height:1.55; color:var(--text);
+    background:var(--panel-2); border:1px solid var(--border); border-radius:9px; padding:12px 15px;
+  }
+  .list-simple li .n{color:var(--blue); font-family:var(--mono); font-size:13px; flex:0 0 auto; padding-top:2px;}
+
+  .table-wrap{border:1px solid var(--border); border-radius:10px; overflow:hidden;}
+  table{width:100%; border-collapse:collapse; font-size:15px;}
+  th{
+    text-align:left; font-size:13px; padding:12px 16px; background:var(--panel-2); color:var(--text-dim);
+    border-bottom:1px solid var(--border); font-weight:700;
+  }
+  th:first-child{color:var(--green);}
+  th:last-child{color:var(--amber);}
+  td{padding:12px 16px; border-bottom:1px solid var(--border); color:var(--text-dim);}
+  tr:last-child td{border-bottom:none;}
+  td:first-child{border-right:1px solid var(--border); color:var(--text);}
+
+  .try-box{
+    border:1.5px dashed rgba(61,220,132,.4); background:var(--green-soft); border-radius:12px; padding:22px 24px;
+  }
+  .try-box ol{margin:0; padding-left:20px; display:flex; flex-direction:column; gap:9px;}
+  .try-box li{font-size:16px; line-height:1.55; color:var(--text);}
+  .try-time{margin-top:14px; font-size:14px; color:var(--green); font-weight:600;}
+
+  .reveal-box{
+    background:var(--amber-soft); border:1px solid rgba(255,181,69,.35); border-radius:9px;
+    padding:14px 16px; font-size:15.5px; line-height:1.6; color:var(--text);
+  }
+  .reveal-box .lbl{color:var(--amber); font-weight:700; display:block; margin-bottom:5px; font-size:13px;}
+
+  .rule-text{
+    font-size:clamp(21px,2.2vw,28px); font-weight:700; line-height:1.45; color:var(--text);
+    border-left:3px solid #ff8383; padding-left:20px; max-width:680px;
+  }
+
+  .steps-row{display:flex; flex-wrap:wrap; gap:10px;}
+  .step{
+    flex:1 1 130px; background:var(--panel-2); border:1px solid var(--border); border-radius:9px; padding:12px 13px;
+  }
+  .step .s-label{font-size:12px; font-weight:700; color:var(--blue); margin-bottom:5px;}
+  .step .s-prompt{font-size:12.5px; color:var(--text-faint); line-height:1.5;}
+
+  .cheat-cols{display:grid; grid-template-columns:repeat(3,1fr); gap:16px;}
+  @media (max-width:760px){.cheat-cols{grid-template-columns:1fr;}}
+  .cheat-col{background:var(--panel-2); border:1px solid var(--border); border-radius:10px; padding:16px;}
+  .cheat-col h3{margin:0 0 10px 0; font-size:12.5px; color:var(--green); text-transform:uppercase; letter-spacing:.04em;}
+  .cheat-col ul{margin:0; padding-left:16px; display:flex; flex-direction:column; gap:7px;}
+  .cheat-col li{font-size:13.5px; color:var(--text-dim);}
+
+  .cta-text{font-size:clamp(20px,2.2vw,26px); color:var(--text-dim); line-height:1.5; max-width:680px;}
+
+  .takeaway{
+    margin-top:6px; display:inline-flex; gap:8px; align-items:center;
+    font-size:13.5px; font-weight:700; color:var(--bg); background:var(--blue);
+    padding:9px 15px; border-radius:7px; align-self:flex-start;
+  }
+
+  .module-divider{
+    display:flex; flex-direction:column; gap:16px; justify-content:center; min-height:60vh;
+  }
+  .module-divider .mod-num{font-size:14px; color:var(--blue); font-weight:700; letter-spacing:.1em;}
+  .module-divider h1{font-size:clamp(28px,4vw,46px);}
+
+  /* ---------- BOTTOM ---------- */
+  .bottombar{
+    flex:0 0 auto; display:flex; align-items:center; gap:14px; padding:14px 28px;
+    background:var(--panel-2); border-top:1px solid var(--border);
+  }
+  .navbtn{
+    font-size:14px; color:var(--text-dim); background:var(--panel); border:1px solid var(--border);
+    padding:9px 16px; border-radius:7px; cursor:pointer;
+  }
+  .navbtn:hover{color:var(--blue); border-color:#33405a;}
+  .navbtn:disabled{opacity:.3; cursor:default;}
+  .navbtn:disabled:hover{color:var(--text-dim); border-color:var(--border);}
+  .count{font-size:13px; color:var(--text-faint); white-space:nowrap;}
+  .spacer{flex:1;}
+  .notes-toggle{
+    font-size:12.5px; color:var(--text-faint); background:transparent; border:1px solid var(--border);
+    padding:8px 12px; border-radius:7px; cursor:pointer;
+  }
+  .notes-toggle.on{color:var(--amber); border-color:rgba(255,181,69,.4); background:var(--amber-soft);}
+
+  .notes-drawer{
+    position:fixed; right:0; top:0; bottom:0; width:340px; background:var(--panel-2);
+    border-left:1px solid var(--border); transform:translateX(100%); transition:transform .25s ease;
+    display:flex; flex-direction:column; z-index:50;
+  }
+  .notes-drawer.open{transform:translateX(0);}
+  .notes-head{
+    padding:16px 18px; border-bottom:1px solid var(--border); font-size:12.5px; font-weight:700;
+    color:var(--amber); text-transform:uppercase; letter-spacing:.04em;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .notes-close{cursor:pointer; color:var(--text-faint);}
+  .notes-body{padding:18px; overflow-y:auto; font-size:14.5px; line-height:1.65; color:var(--text-dim); flex:1;}
+
+  ::-webkit-scrollbar{width:9px;}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:6px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+
+  @media (max-width:640px){
+    .stage{padding:30px 20px 50px;}
+    .topbar{padding:14px 16px 10px;}
+    .bottombar{padding:12px 16px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="top-row">
+      <div class="deck-name">Prompt Engineering Mastery — <b>Claude for Developers</b></div>
+      <div class="module-pills" id="pills"></div>
+    </div>
+    <div class="progress-track" id="progressTrack"><div class="progress-fill" id="progressFill"></div></div>
+  </div>
+
+  <div class="stage-wrap"><div class="stage" id="stage"></div></div>
+
+  <div class="bottombar">
+    <button class="navbtn" id="prevBtn">← Back</button>
+    <button class="navbtn" id="nextBtn">Next →</button>
+    <div class="count" id="count">1 / 1</div>
+    <div class="spacer"></div>
+    <button class="notes-toggle" id="notesToggle">Presenter notes [n]</button>
+  </div>
+</div>
+
+<div class="notes-drawer" id="notesDrawer">
+  <div class="notes-head"><span>Presenter notes</span><span class="notes-close" id="notesClose">close ✕</span></div>
+  <div class="notes-body" id="notesBody"></div>
+</div>
+
+<script>
+/* ============================= DATA ============================= */
+const MODULES = [
+  {id:"M0", name:"Start Here"},
+  {id:"M1", name:"How Claude Works"},
+  {id:"M2", name:"Anatomy of a Prompt"},
+  {id:"M3", name:"Techniques"},
+  {id:"M4", name:"CLAUDE.md"},
+  {id:"M5", name:"Real Workflows"},
+  {id:"M6", name:"Where It Breaks"},
+  {id:"M7", name:"Putting It Together"},
+];
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function lines(arr){ return arr.map(l => l.length ? esc(l) : '&nbsp;').join('\n'); }
+
+const SLIDES = [
+
+// =============== MODULE 0 ===============
+{module:0, badge:"hook", title:"Two Prompts, Same Bug, Very Different Results",
+ explain:"Below are two prompts asking Claude to do the exact same thing — fix a bug. Read both. The second one only takes a few more seconds to write, but look at what it gets you.",
+ pair:{
+   before:{tone:"weak", label:"Prompt A — 6 seconds to write", code:["fix this bug"]},
+   after:{tone:"strong", label:"Prompt B — 45 seconds to write", code:[
+     "The getUserBalance() function in",
+     "billing/wallet.ts shows stale",
+     "balances after a refund.",
+     "Error: \"Cannot read property",
+     "'amount' of undefined\" at line 42.",
+     "",
+     "Fix only the race condition.",
+     "Don't change the retry logic below it.",
+     "Show me a diff, not the whole file."]}
+ },
+ why:"Prompt A took 4 back-and-forth messages and 20 minutes, and was still wrong twice. Prompt B got the right answer in one try, in under a minute. That gap is the entire point of this session.",
+ notes:"Open cold. Don't over-explain yet — let the room feel the gap for themselves before you unpack why."},
+
+{module:0, badge:"idea", title:"Why This Is Worth an Hour of Your Time",
+ explain:"You probably already use Claude every day. The quality of what you get back almost never comes down to the tool itself — it comes down to how the question was asked. That's a learnable skill, the same way debugging or reading a stack trace is a learnable skill.",
+ why:"Two engineers with the exact same access to Claude can get very different results. This session is about closing that gap for you.",
+ notes:"Keep this short — it's the pitch, not the content."},
+
+{module:0, badge:"idea", title:"What You'll Be Able to Do By the End",
+ explain:"By the end of this session, you'll be able to:",
+ list:[
+   "Write a prompt that gets the right answer the first time, not the fourth.",
+   "Set up your project once so Claude already \"knows\" how your team works.",
+   "Use Claude safely inside real work — code review, tests, pull requests.",
+   "Spot when Claude is confidently wrong, before it ships."
+ ],
+ takeaway:"Use this tomorrow on: the very next thing you ask Claude to do.",
+ notes:"Set expectations: this is hands-on. Point out that there will be short exercises along the way, not just slides."},
+
+// =============== MODULE 1 ===============
+{module:1, badge:"overview", title:"How Claude Actually Works", moduleIntro:true,
+ explain:"Before we get into techniques, it helps to understand — in plain terms, no math — what Claude is actually doing when you send it a message. Five short ideas, then we move on."},
+
+{module:1, badge:"idea", title:"Claude Predicts What Comes Next — Very Well",
+ explain:"At the core, Claude looks at everything you've written so far and predicts what should come next, piece by piece. That sounds simple — but Claude learned this pattern by reading an enormous amount of well-written code, documentation, and technical writing. So its \"best guess\" for what comes next is usually a genuinely good answer, not a random one.",
+ analogy:"Think of it like the world's most well-read pair programmer — one who's seen a huge number of codebases — always finishing your thought the way a strong engineer would.",
+ why:"This is why giving Claude more of the right context leads to better answers: you're giving it more of the sentence to finish correctly."},
+
+{module:1, badge:"idea", title:"Claude Has a Limited \"Memory\" for Each Conversation",
+ explain:"This is called the context window. Think of it as Claude's short-term memory for this one conversation. Everything you paste or type lives inside that memory — but it has a size limit. If you dump in a giant log file, the one line you actually care about can get buried in the noise.",
+ example:{tone:"weak", label:"a full memory bar", code:[
+   "[======== 40k tokens used ========.........] out of 200k",
+   " your 3 files                 still room, but don't waste it"
+ ]},
+ why:"Paste what's relevant, skip the rest. A focused conversation gets a better answer than a stuffed one."},
+
+{module:1, badge:"idea", title:"Claude Reads in Small Chunks Called \"Tokens\"",
+ explain:"Claude doesn't read a whole word at a time — it breaks everything into small chunks called tokens, usually a few characters each. You don't need to memorize this. Just know: messy, minified, or bloated code eats up more of Claude's memory than clean code does, for the same amount of actual information.",
+ example:{tone:"weak", label:"one line of code, broken into tokens", code:[
+   "const x = 42;",
+   "  →  [const][ x][ =][ 42][;]"
+ ]},
+ why:"Clean, well-named code isn't just good practice for humans — it's cheaper and clearer for Claude too."},
+
+{module:1, badge:"idea", title:"What Claude Is Great At vs. What Still Needs Your Eyes",
+ explain:"Not everything is equally reliable. Here's a simple way to think about it:",
+ table:{
+   headers:["Claude is strong here","You still need to check this"],
+   rows:[
+     ["Boilerplate & scaffolding","Whether the business logic is actually correct"],
+     ["Refactors with a clear spec","Novel problems nobody has solved before"],
+     ["Explaining unfamiliar code","Anything that depends on your live system's current state"],
+     ["Writing tests from a spec","Judgment calls with real tradeoffs"]
+   ]
+ },
+ why:"This table is the map for the rest of the session — we'll come back to the right-hand column later, in detail."},
+
+{module:1, badge:"watch", title:"Claude Can't See Your Codebase on Its Own",
+ explain:"Claude only knows what's actually inside your conversation with it. It cannot browse your repo, query your database, or read your team's Slack. If you don't paste or attach something, Claude simply doesn't know it exists — and it may guess instead, confidently and fluently, as if it knew.",
+ why:"Most \"Claude got it wrong\" moments are actually \"Claude was never shown the right file.\" This one idea will save you more time than almost anything else in this session.",
+ takeaway:"Use this tomorrow on: deciding exactly what to paste into your very next prompt.",
+ notes:"Land this one hard — it's the single most common failure mode people run into in their first week."},
+
+// =============== MODULE 2 ===============
+{module:2, badge:"overview", title:"What Makes a Prompt Actually Good", moduleIntro:true,
+ explain:"Every strong prompt is built from the same 5 simple ingredients: Task, Context, Constraints, Format, and Examples. Once you know them, it becomes very hard to accidentally write a vague prompt."},
+
+{module:2, badge:"idea", title:"Ingredient 1 of 5 — Task", 
+ explain:"This is simply: what do you actually want done? State it as one clear sentence. If you're asking for more than one thing, you're really writing two prompts — split them.",
+ pair:{
+   before:{tone:"weak", label:"vague task", code:["make this better"]},
+   after:{tone:"strong", label:"clear task", code:[
+     "Refactor processOrder() to pull the",
+     "tax calculation into its own",
+     "function. Keep the public",
+     "signature the same."
+   ]}
+ },
+ why:"A vague task forces Claude to guess what \"better\" means. A clear task means the first answer is usually the right one."},
+
+{module:2, badge:"idea", title:"Ingredient 2 of 5 — Context",
+ explain:"This is the background Claude needs to make a good decision: what language, what file, what's actually happening. Without it, Claude has to guess — and it'll guess at whatever is most common in general, which might not match your situation at all.",
+ example:{tone:"strong", label:"context that changes the answer", code:[
+   "Stack: Node 20, Express, Postgres via Prisma.",
+   "File: routes/orders.ts (attached).",
+   "This endpoint gets hit ~200 times a second in production."
+ ]},
+ why:"Context isn't extra fluff — it directly changes which of many possible solutions Claude reaches for."},
+
+{module:2, badge:"idea", title:"Ingredient 3 of 5 — Constraints",
+ explain:"This is you telling Claude what to leave alone. Without constraints, a 5-line fix can quietly turn into Claude \"improving\" 200 lines you never asked it to touch.",
+ example:{tone:"strong", label:"drawing the fence", code:[
+   "Don't touch the retry logic in lines 80-110.",
+   "No new npm dependencies.",
+   "Must stay backward-compatible with the v1 API."
+ ]},
+ why:"Constraints don't limit quality — they're how a small fix stays small."},
+
+{module:2, badge:"idea", title:"Ingredient 4 of 5 — Format",
+ explain:"This is you saying exactly what shape you want the answer back in — a diff, a JSON object, just the one function. Skip this and you'll get a wall of text you have to dig through by hand.",
+ example:{tone:"strong", label:"telling it exactly how to answer", code:[
+   "Return only a unified diff.",
+   "No explanation above or below it."
+ ]},
+ why:"Unformatted output costs you time re-reading it. Formatted output costs you time reviewing it — which is a much better trade."},
+
+{module:2, badge:"idea", title:"Ingredient 5 of 5 — Examples",
+ explain:"Showing Claude one real example of the pattern or style you want is often more effective than trying to describe that style in words.",
+ example:{tone:"strong", label:"one example does a lot of work", code:[
+   "// This is how we handle errors here:",
+   "try {",
+   "  await db.orders.update(id, data);",
+   "} catch (e) {",
+   "  throw new OrderUpdateError(id, e);",
+   "}",
+   "Now write updateInventory() the same way."
+ ]},
+ why:"One good example is worth several sentences of description."},
+
+{module:2, badge:"idea", title:"Watch All 5 Ingredients Come Together",
+ explain:"Here's the same one-liner from the start of this session, rebuilt using all 5 ingredients: Task, Context, Constraints, Format, and one Example.",
+ pair:{
+   before:{tone:"weak", label:"before", code:["fix this bug"]},
+   after:{tone:"strong", label:"after — all 5 ingredients", code:[
+     "TASK: Fix the race condition in",
+     "getUserBalance() (wallet.ts:42).",
+     "",
+     "CONTEXT: Node/Express, Postgres.",
+     "Error appears after refunds.",
+     "",
+     "CONSTRAINTS: Don't touch retry",
+     "logic below line 50. No new deps.",
+     "",
+     "FORMAT: Diff only.",
+     "",
+     "EXAMPLE: We guard nulls like this",
+     "elsewhere: if (!tx) return null;"
+   ]}
+ },
+ why:"This took about 45 seconds longer to write than \"fix this bug\" — and turned a 20-minute back-and-forth into a correct answer on the first try.",
+ notes:"Walk through each labeled block out loud, pointing at each one as you read it."},
+
+{module:2, badge:"idea", title:"One More Thing — What to Leave Out",
+ explain:"Two quick habits worth building alongside the 5 ingredients:",
+ list:[
+   "Giving Claude a role (\"you are a senior engineer reviewing for security\") helps when it changes what Claude actually looks for — skip it for simple tasks, where it's just noise.",
+   "Don't paste your entire repo \"just in case.\" Paste only the 2-3 files that matter.",
+   "Don't ask for 5 unrelated things in one prompt. Splitting them gets you 5 good answers instead of one mediocre one."
+ ]},
+
+{module:2, badge:"idea", title:"Your Prompt Checklist — Save This One",
+ explain:"Before you hit enter on your next real prompt, run it through this list:",
+ list:[
+   "TASK — one clear ask, in one sentence.",
+   "CONTEXT — the stack, the file, what's actually happening.",
+   "CONSTRAINTS — what should NOT be touched.",
+   "FORMAT — how you want the answer shaped.",
+   "EXAMPLE — one snippet showing the pattern you want."
+ ],
+ takeaway:"Use this tomorrow on: your very next ticket — run it through these 5 ingredients before you hit enter.",
+ notes:"Tell people to screenshot this one specifically — it's designed to be pinned somewhere visible."},
+
+// =============== MODULE 3 ===============
+{module:3, badge:"overview", title:"Techniques That Change the Quality of the Answer", moduleIntro:true,
+ explain:"These aren't tricks. They're small, repeatable adjustments to how you ask, and each one reliably produces a better answer. Try each one on your own real work as we go."},
+
+{module:3, badge:"idea", title:"Show Examples of Your Team's Style",
+ explain:"Asking with zero examples usually gets you a generic, textbook answer. Showing 1-2 examples of how your team actually writes code first — this is called \"few-shot\" — gets you something much closer to what you'll actually merge.",
+ pair:{
+   before:{tone:"weak", label:"no examples given", code:[
+     "function getUser(id) {",
+     "  return db.query(",
+     "    'SELECT * FROM users WHERE id=' + id",
+     "  );",
+     "}"
+   ]},
+   after:{tone:"strong", label:"2 examples of team style given first", code:[
+     "export async function getUser(",
+     "  id: string",
+     "): Promise<User | null> {",
+     "  return db.users.findUnique({",
+     "    where: { id }",
+     "  });",
+     "}"
+   ]}
+ },
+ why:"Same request, same model — the only difference is two examples pasted first. Notice the first version also has a SQL injection risk we'll come back to later."},
+
+{module:3, badge:"idea", title:"Ask Claude to \"Think It Through\" Before Answering",
+ explain:"This is often called chain-of-thought. Simply adding the instruction \"think it through step by step before answering\" makes Claude reason out loud first — and reasoning out loud catches mistakes that a fast, direct answer tends to miss.",
+ why:"It costs you one extra sentence to ask for this. It can save you an entire bug."},
+
+{module:3, badge:"idea", title:"Ask for a Plan Before Any Code Gets Written",
+ explain:"Instead of asking for code right away, ask for a short plan first — and approve it before Claude writes anything. This catches a wrong approach while it's still one paragraph, not after it's 200 lines you now have to review.",
+ example:{tone:"strong", label:"propose, then execute", code:[
+   "Don't write code yet. First, give me",
+   "a 3-step plan for how you'd refactor",
+   "this module. I'll approve it, then",
+   "you build."
+ ]}},
+
+{module:3, badge:"try", title:"Try It — Treat a Prompt Like a Code Review Loop",
+ explain:"Instead of asking once and accepting the first answer, run it like a real review — back and forth, refining each time.",
+ steps:[
+   "Pick a function from your own repo right now.",
+   "Ask for a first-pass implementation.",
+   "Then ask: \"Now review your own answer for edge cases you missed.\"",
+   "Apply one more round of feedback, just like a real PR review."
+ ],
+ time:"8 minutes",
+ notes:"Circulate the room during this one — this is where \"iterative, not one-shot\" actually clicks for people."},
+
+{module:3, badge:"idea", title:"Tell Claude Exactly What Shape to Answer In",
+ explain:"Same idea as the Format ingredient from Module 2, but especially useful when Claude's output needs to be read by a script, not a human.",
+ example:{tone:"strong", label:"an answer your code can parse", code:[
+   "Return ONLY valid JSON matching:",
+   "{ \"field\": string, \"issue\": string,",
+   "  \"severity\": \"low\"|\"med\"|\"high\" }",
+   "No extra text, no markdown."
+ ]}},
+
+{module:3, badge:"idea", title:"Set Guardrails: What Should Never Be Touched",
+ explain:"Explicitly name the files or folders that are off-limits. This is the single fastest way to prevent an unwanted \"improvement\" to code you never asked about.",
+ example:{tone:"strong", label:"drawing the line before you start", code:[
+   "Off-limits: auth/, payments/, and",
+   "any file with \"legacy\" in the name.",
+   "Don't add packages. Don't rename",
+   "existing exports."
+ ]}},
+
+{module:3, badge:"idea", title:"Separate Instructions From Pasted Data",
+ explain:"When you're pasting both an instruction and a chunk of code or logs in the same message, wrap them in simple tags. This removes any chance Claude mixes up what's an instruction and what's just data.",
+ example:{tone:"strong", label:"clear separation using tags", code:[
+   "<instructions>",
+   "Summarize the errors below.",
+   "</instructions>",
+   "<log>",
+   "...raw log output goes here...",
+   "</log>"
+ ]}},
+
+{module:3, badge:"idea", title:"Ask Claude to Flag When It's Guessing",
+ explain:"Simply ask: if you're not sure about an API, a config value, or how something behaves — say so, instead of stating it as fact.",
+ example:{tone:"strong", label:"a one-line ask that matters a lot", code:[
+   "If you're guessing at any part of",
+   "this, say so explicitly instead of",
+   "stating it as fact."
+ ]},
+ why:"In production code, a flagged guess is useful information. A confident wrong answer is a future incident."},
+
+{module:3, badge:"try", title:"Try It — Debug With a Real Error From Your Own Logs",
+ explain:"Practice pasting exactly the right amount of information — not too little, not the whole file.",
+ steps:[
+   "Grab a real error from your own terminal or logs right now.",
+   "Paste the error plus only the one relevant function — not the whole file.",
+   "Ask: \"What's causing this, and what's the smallest fix?\""
+ ],
+ time:"5 minutes",
+ notes:"Reinforces Module 1's lesson: paste less, get more."},
+
+{module:3, badge:"watch", title:"The Habit to Avoid: Asking for Too Much at Once",
+ explain:"It's tempting to ask for everything in one message. Resist it — you'll get a shallower answer to all five things instead of a solid answer to one.",
+ pair:{
+   before:{tone:"weak", label:"one prompt, five different jobs", code:[
+     "Fix the bug, also refactor this",
+     "whole file, also add tests, also",
+     "update the docs, also check for",
+     "security issues, and rename these",
+     "variables while you're in there."
+   ]},
+   after:{tone:"strong", label:"split into a real sequence", code:[
+     "Prompt 1: Fix the bug (diff only).",
+     "Prompt 2: Once that's merged, add",
+     "  tests for the fixed path.",
+     "Prompt 3: Separate PR — rename",
+     "  for clarity."
+   ]}
+ },
+ takeaway:"Use this tomorrow on: the next prompt where you catch yourself typing \"and also.\""},
+
+// =============== MODULE 4 ===============
+{module:4, badge:"overview", title:"One File That Makes Claude Know Your Codebase", moduleIntro:true,
+ explain:"CLAUDE.md is a plain markdown file that Claude reads automatically at the start of every session in a project. Write it once, and every future prompt starts from \"knows our codebase\" instead of \"generic coder.\""},
+
+{module:4, badge:"idea", title:"What Actually Goes Into a CLAUDE.md",
+ explain:"You don't need much. Ten lines covering your stack, your conventions, and a short \"never do this\" list already gets you most of the benefit.",
+ example:{tone:"strong", label:"CLAUDE.md", code:[
+   "# CLAUDE.md",
+   "Stack: Node 20, TypeScript, Prisma, Postgres",
+   "Test command: npm run test",
+   "Style: no default exports, prefer named",
+   "Never: touch anything in /legacy",
+   "Never: add a new npm dependency",
+   "without asking"
+ ]}},
+
+{module:4, badge:"idea", title:"Watch One Get Built, Line by Line",
+ explain:"Here's a real example being written for a different kind of service — notice how short it actually is.",
+ example:{tone:"strong", label:"payments-service", code:[
+   "# CLAUDE.md — payments-service",
+   "Stack: Go 1.22, gRPC, Postgres",
+   "Run tests: make test",
+   "Lint: golangci-lint run",
+   "Conventions: table-driven tests only,",
+   "errors wrapped with fmt.Errorf(%w)",
+   "Never: log raw card numbers, ever.",
+   "Never: touch billing/reconcile.go",
+   "without a second reviewer."
+ ]},
+ why:"Ask yourself right now: what's YOUR team's \"never do this\" rule? That's the line most worth writing down."},
+
+{module:4, badge:"try", title:"Try It — Commit a Working CLAUDE.md",
+ explain:"This is the single highest-value thing you'll do in this whole session.",
+ steps:[
+   "Open your own repo, or one you touch often.",
+   "Write: your stack, your test command, 2-3 conventions, and 1-2 never-do-this rules.",
+   "Commit it. Yes — actually commit it, right now."
+ ],
+ time:"10 minutes",
+ notes:"Don't let this slide slip — give it real time. This is the module's entire payoff."},
+
+{module:4, badge:"idea", title:"Same Prompt, Very Different Result",
+ explain:"This is the exact same request, in the exact same repo. The only difference is whether a CLAUDE.md exists.",
+ pair:{
+   before:{tone:"weak", label:"without a CLAUDE.md", code:[
+     "app.get('/users', (req, res) => {",
+     "  db.query('SELECT * FROM users')",
+     "    .then(r => res.json(r));",
+     "});",
+     "// generic Express, wrong ORM,",
+     "// no error handling"
+   ]},
+   after:{tone:"strong", label:"with a CLAUDE.md", code:[
+     "export async function getUsers(",
+     "  req: Request, res: Response",
+     ") {",
+     "  const users = await db.users",
+     "    .findMany();",
+     "  res.json(users);",
+     "}",
+     "// matches the team's Prisma pattern"
+   ]}
+ },
+ why:"Same effort typing the prompt. The only difference is six lines of context that now load automatically, every time."},
+
+{module:4, badge:"idea", title:"Keep It Alive — Or It Starts Working Against You",
+ explain:"A CLAUDE.md that's gone stale is actually worse than having none — it confidently points Claude at conventions your team already abandoned.",
+ list:[
+   "Update it in the same PR that changes a convention — same discipline as updating a README.",
+   "Whenever you catch yourself correcting Claude on something obvious, ask: \"should this go in CLAUDE.md?\""
+ ],
+ takeaway:"Use this tomorrow on: the CLAUDE.md you just committed above — go use it on your next real prompt."},
+
+// =============== MODULE 5 ===============
+{module:5, badge:"overview", title:"Using Claude Inside Your Actual Workflow", moduleIntro:true,
+ explain:"So far we've focused on writing a single good prompt. This module is about weaving Claude into the real steps of shipping something: issue, plan, code, review, tests, PR, merge."},
+
+{module:5, badge:"idea", title:"The Full Loop, Stage by Stage",
+ explain:"Here's roughly how Claude fits into a normal ticket, from start to merge. Every slide after this one zooms into one of these stages.",
+ pipeline:[
+   {label:"Issue", prompt:"Summarize this ticket into 3 concrete acceptance criteria."},
+   {label:"Plan", prompt:"Propose a 3-step plan before writing any code."},
+   {label:"Code", prompt:"Implement step 1 only. Return a diff."},
+   {label:"Review", prompt:"(you — actually reading it)"},
+   {label:"Tests", prompt:"Write tests covering the edge cases you just fixed."},
+   {label:"PR", prompt:"Write a PR description from this diff."},
+   {label:"Merge", prompt:"(you, again)"}
+ ]},
+
+{module:5, badge:"idea", title:"A Template for Code Review",
+ explain:"Save this one — it's reusable on almost any diff you produce.",
+ example:{tone:"strong", label:"code review template", code:[
+   "Review this diff for:",
+   "1. Security issues (injection,",
+   "   secrets, auth gaps)",
+   "2. Readability a new hire could",
+   "   follow",
+   "3. Edge cases the tests don't cover",
+   "Flag severity per issue. Don't",
+   "rewrite the code, just report."
+ ]},
+ why:"Try this template on your last merged PR tonight and see what it flags."},
+
+{module:5, badge:"idea", title:"Getting Tests That Actually Catch Bugs",
+ explain:"A vague request for tests gets you happy-path filler. Naming the actual edge cases you're worried about gets you tests that catch real regressions.",
+ pair:{
+   before:{tone:"weak", label:"\"write tests for this\"", code:[
+     "test('processRefund works', () => {",
+     "  expect(processRefund(order))",
+     "    .toBeTruthy();",
+     "});",
+     "// happy path only"
+   ]},
+   after:{tone:"strong", label:"naming the edge cases", code:[
+     "Write tests for processRefund().",
+     "Cover:",
+     "- the happy path",
+     "- a refund larger than the charge",
+     "- a refund on an already-refunded order",
+     "- a network failure mid-transaction"
+   ]}
+ }},
+
+{module:5, badge:"idea", title:"The Fastest Way Into Code You Didn't Write",
+ explain:"This is one of the highest-value everyday uses of Claude — getting oriented in an unfamiliar file fast.",
+ example:{tone:"strong", label:"onboarding into legacy code", code:[
+   "Explain what this module does, in",
+   "plain English, for someone who's",
+   "never seen it. Then list the 3",
+   "riskiest parts to change."
+ ]}},
+
+{module:5, badge:"idea", title:"A Template for PRs and Commit Messages",
+ explain:"A small thing that saves real time, every single day.",
+ example:{tone:"strong", label:"PR + commit template", code:[
+   "Write a PR description from this diff:",
+   "- What changed and why (2 sentences)",
+   "- How to test it",
+   "- Anything risky a reviewer should",
+   "  scrutinize",
+   "Commit message: imperative mood,",
+   "under 72 characters for the subject."
+ ]}},
+
+{module:5, badge:"idea", title:"Working on Two Features at Once, Safely",
+ explain:"If you're running two Claude sessions in parallel, treat them like two separate engineers working on two separate branches.",
+ list:[
+   "Use two branches and two sessions — never one session juggling both.",
+   "Give each session its own scoped context so they don't bleed into each other.",
+   "Merge conflicts come from you, not from Claude — same discipline as any two people working in parallel."
+ ]},
+
+{module:5, badge:"idea", title:"Using Claude Inside a CI Pipeline",
+ explain:"Same 5 ingredients from Module 2 — just triggered automatically instead of typed by hand.",
+ example:{tone:"strong", label:"a CI step", code:[
+   "[CI step] Given this failing test",
+   "output, propose a minimal fix as",
+   "a diff. Do not modify test files.",
+   "Exit non-zero if confidence is low."
+ ]}},
+
+{module:5, badge:"watch", title:"Set a Deny-List Before Giving Claude Any Autonomy",
+ explain:"If Claude is going to take actions on its own — running commands, touching config — set hard limits first. This is not optional.",
+ example:{tone:"watch", label:"non-negotiable before autonomous runs", code:[
+   "Deny-list before autonomous runs:",
+   "- rm -rf, force-push, drop table",
+   "- anything touching /prod-config",
+   "- any command that rewrites git history"
+ ]},
+ why:"Autonomy without a deny-list isn't a productivity boost — it's a production incident with extra steps."},
+
+{module:5, badge:"idea", title:"Refactors: Always a Plan and a Diff, Never a Silent Rewrite",
+ explain:"The same \"plan before code\" idea from Module 3, applied specifically to refactors — where the risk of an unreviewable wall of changes is highest.",
+ example:{tone:"strong", label:"refactor discipline", code:[
+   "Propose a refactor plan for this",
+   "file. Wait for my approval. When",
+   "approved, return changes as a diff,",
+   "never a full-file rewrite."
+ ]}},
+
+{module:5, badge:"rule", title:"The One Rule That Matters Most",
+ explain:"Everything else in this module is a technique. This is the rule.",
+ rule:"If you can't explain what a change does and why, in your own words, in code review — it doesn't merge.",
+ why:"This isn't about trusting the model less. It's about who's on call when it breaks at 2am — and that's not Claude.",
+ takeaway:"Use this tomorrow on: your very next PR — run it through the code review template before you request review.",
+ notes:"Say this one slowly. It's the module's non-negotiable."},
+
+// =============== MODULE 6 ===============
+{module:6, badge:"overview", title:"Where Claude Gets It Wrong — and How to Catch It", moduleIntro:true,
+ explain:"Claude is genuinely useful, but it's not infallible. This module is about recognizing the specific ways it fails — so you catch them before they ship, not after."},
+
+{module:6, badge:"watch", title:"Spot the Fake Function",
+ explain:"Read the code below carefully. One part of it isn't real.",
+ example:{tone:"watch", label:"generated code — something here is fiction", code:[
+   "import { retryWithBackoff } from",
+   "  'axios-retry-utils';",
+   "",
+   "await retryWithBackoff(fetchUser, {",
+   "  maxAttempts: 3,",
+   "  strategy: 'exponential'",
+   "});"
+ ]},
+ reveal:"That package doesn't exist. Claude invented a plausible-sounding name because the pattern is common — but this specific one is fiction.",
+ why:"Hallucinated APIs are confident, specific, and completely fake-sounding in a convincing way. Always check that anything unfamiliar actually exists before you install it."},
+
+{module:6, badge:"watch", title:"Spot the Subtle Logic Bug",
+ explain:"This one is trickier — it compiles, it passes a naive test, and it reads as correct.",
+ example:{tone:"watch", label:"looks right, might not be", code:[
+   "function isEligibleForDiscount(user) {",
+   "  return user.orders.length > 5 &&",
+   "    user.orders.some(o =>",
+   "      o.total > 100);",
+   "}"
+ ]},
+ reveal:"The bug is a business-logic assumption Claude couldn't verify, because nobody told it the actual rule: does \"some\" order over $100 count, or does it need to be all of them?",
+ why:"Code that looks right is more dangerous than code that looks broken. This is exactly the \"business logic correctness\" gap from the table back in Module 1."},
+
+{module:6, badge:"idea", title:"Security Gaps AI-Generated Code Commonly Introduces",
+ explain:"Three patterns worth actively checking for in any AI-generated code you review:",
+ list:[
+   "Injection — string-concatenated SQL instead of parameterized queries (this showed up in Module 3's zero-shot example, if you noticed it).",
+   "Secrets — API keys or tokens hardcoded \"for now\" in example code.",
+   "Missing validation — trusting user input that Claude assumed was already sanitized."
+ ]},
+
+{module:6, badge:"idea", title:"The Real Trap: Trusting Confident-Sounding Output",
+ explain:"Claude's tone doesn't change between \"I'm certain\" and \"I'm guessing\" unless you specifically ask it to flag that difference.",
+ list:[
+   "The fix isn't \"trust it less\" in general — it's Module 3's uncertainty-flagging technique, used every time, on anything load-bearing.",
+   "Confidence is a writing style, not a correctness signal. Treat a confident-sounding answer with the same scrutiny as any other."
+ ]},
+
+{module:6, badge:"idea", title:"When an AI-Assisted Change Breaks Production",
+ explain:"A simple playbook for when something goes wrong:",
+ list:[
+   "Revert first, diagnose second — don't debug live.",
+   "Pull up the original prompt — what context was missing?",
+   "Fix the prompt AND the code — otherwise the same bug comes back.",
+   "Add the missing case to your test suite, not just a one-off patch."
+ ],
+ takeaway:"Use this tomorrow on: your next PR review — actually apply the \"spot the bug\" instinct to real AI-generated code, not just this slide."},
+
+// =============== MODULE 7 ===============
+{module:7, badge:"overview", title:"Putting It All Together", moduleIntro:true,
+ explain:"One last hands-on exercise, then a set of things to take with you and actually use."},
+
+{module:7, badge:"try", title:"Try It — Ship One Real Feature, Start to Finish",
+ explain:"This is the whole session, compressed into one exercise.",
+ steps:[
+   "Pick a real ticket from your actual backlog.",
+   "Run the full loop: plan → code → review template → tests → PR description.",
+   "Time yourself, and compare it to how long this usually takes you by hand."
+ ],
+ time:"20 minutes",
+ notes:"This is the payoff. Let it breathe, don't rush people out of it."},
+
+{module:7, badge:"idea", title:"Your Personal Prompt Library — 5 to Save",
+ explain:"Take these five templates with you — literally copy them into your editor's snippets right now.",
+ list:[
+   "The 5-ingredient engineered prompt (Module 2).",
+   "The code review template (Module 5).",
+   "Test generation with named edge cases (Module 5).",
+   "The PR description template (Module 5).",
+   "Your own CLAUDE.md never-do-this list (Module 4)."
+ ]},
+
+{module:7, badge:"idea", title:"The One-Pager — Save or Print This",
+ explain:"Everything from this session, on one page.",
+ cheatsheet:[
+   {h:"5 ingredients", items:["Task","Context","Constraints","Format","Example"]},
+   {h:"top techniques", items:["Show examples of your style","Plan before code","Think step by step","Set guardrails / off-limits scope","Ask it to flag uncertainty"]},
+   {h:"habits to avoid", items:["Asking for 5 things at once","Pasting the whole repo","Accepting a silent full-file rewrite"]}
+ ]},
+
+{module:7, badge:"wrap", title:"Use This on Your Next Ticket. Today.",
+ explain:"Not next sprint. Not \"when you have time.\"",
+ cta:"The next ticket you open.",
+ takeaway:"Use this tomorrow on: literally anything — go.",
+ notes:"End high-energy and short. Don't add anything after this slide — let it land."}
+];
+
+/* ============================= RENDER ============================= */
+let current = 0;
+let notesOpen = false;
+
+const stageEl = document.getElementById('stage');
+const pillsEl = document.getElementById('pills');
+const progressFill = document.getElementById('progressFill');
+const countEl = document.getElementById('count');
+const notesBody = document.getElementById('notesBody');
+const notesDrawer = document.getElementById('notesDrawer');
+
+function moduleFirstIndex(m){ return SLIDES.findIndex(s => s.module === m); }
+
+function buildPills(){
+  pillsEl.innerHTML = '';
+  MODULES.forEach((m,i) => {
+    const p = document.createElement('div');
+    p.className = 'pill';
+    p.textContent = m.id;
+    p.title = m.name;
+    p.addEventListener('click', () => goTo(moduleFirstIndex(i)));
+    pillsEl.appendChild(p);
+  });
+}
+
+function codePanel(p, extraClass){
+  const cls = 'codepanel ' + p.tone + (extraClass ? ' '+extraClass : '');
+  return '<div class="'+cls+'"><div class="cp-head">'+esc(p.label)+'</div><pre>'+lines(p.code)+'</pre></div>';
+}
+
+function render(){
+  const s = SLIDES[current];
+  const mod = MODULES[s.module];
+
+  document.querySelectorAll('.pill').forEach((p,i) => p.classList.toggle('active', i===s.module));
+
+  let html = '';
+
+  if(s.moduleIntro){
+    html += '<div class="module-divider">';
+    html += '<div class="mod-num">'+mod.id+' · '+esc(mod.name).toUpperCase()+'</div>';
+    html += '<h1>'+esc(s.title)+'</h1>';
+    html += '<div class="explain">'+esc(s.explain)+'</div>';
+    html += '</div>';
+    stageEl.innerHTML = html;
+    stageEl.scrollTop = 0;
+    updateBottom(s);
+    notesBody.textContent = s.notes || '(no notes for this slide)';
+    return;
+  }
+
+  html += '<div class="badge-row"><span class="badge '+s.badge+'">'+esc(s.badge)+'</span><span class="count" style="color:var(--text-faint)">'+mod.id+' — '+esc(mod.name)+'</span></div>';
+  html += '<h1 class="title">'+esc(s.title)+'</h1>';
+  html += '<div class="explain">'+esc(s.explain)+'</div>';
+
+  if(s.analogy){
+    html += '<button class="analogy-btn" id="analogyBtn">💡 Explain it a different way</button>';
+    html += '<div class="analogy-box" id="analogyBox">'+esc(s.analogy)+'</div>';
+  }
+
+  if(s.pair){
+    html += '<div class="pair">' + codePanel(s.pair.before) + codePanel(s.pair.after) + '</div>';
+  }
+  if(s.example){
+    html += codePanel(s.example);
+  }
+  if(s.table){
+    html += '<div class="table-wrap"><table><thead><tr><th>'+esc(s.table.headers[0])+'</th><th>'+esc(s.table.headers[1])+'</th></tr></thead><tbody>'+
+      s.table.rows.map(r=>'<tr><td>'+esc(r[0])+'</td><td>'+esc(r[1])+'</td></tr>').join('')+'</tbody></table></div>';
+  }
+  if(s.list){
+    html += '<ul class="list-simple">'+s.list.map((it,i)=>'<li><span class="n">'+String(i+1).padStart(2,'0')+'</span><span>'+esc(it)+'</span></li>').join('')+'</ul>';
+  }
+  if(s.steps){
+    html += '<div class="try-box"><ol>'+s.steps.map(st=>'<li>'+esc(st)+'</li>').join('')+'</ol>'+
+      '<div class="try-time">⏱ Time: '+esc(s.time)+'</div></div>';
+  }
+  if(s.reveal){
+    html += '<div class="reveal-box"><span class="lbl">What\'s actually wrong</span>'+esc(s.reveal)+'</div>';
+  }
+  if(s.rule){
+    html += '<div class="rule-text">'+esc(s.rule)+'</div>';
+  }
+  if(s.pipeline){
+    html += '<div class="steps-row">'+s.pipeline.map(st=>'<div class="step"><div class="s-label">'+esc(st.label)+'</div><div class="s-prompt">'+esc(st.prompt)+'</div></div>').join('')+'</div>';
+  }
+  if(s.cheatsheet){
+    html += '<div class="cheat-cols">'+s.cheatsheet.map(c=>'<div class="cheat-col"><h3>'+esc(c.h)+'</h3><ul>'+c.items.map(it=>'<li>'+esc(it)+'</li>').join('')+'</ul></div>').join('')+'</div>';
+  }
+  if(s.cta){
+    html += '<div class="cta-text">'+esc(s.cta)+'</div>';
+  }
+  if(s.why){
+    html += '<div class="why-box"><span class="lbl">Why it matters:</span><span>'+esc(s.why)+'</span></div>';
+  }
+  if(s.takeaway){
+    html += '<div class="takeaway">→ '+esc(s.takeaway)+'</div>';
+  }
+
+  stageEl.innerHTML = html;
+  stageEl.scrollTop = 0;
+
+  const aBtn = document.getElementById('analogyBtn');
+  if(aBtn){
+    aBtn.addEventListener('click', () => {
+      document.getElementById('analogyBox').classList.toggle('open');
+    });
+  }
+
+  updateBottom(s);
+  notesBody.textContent = s.notes || '(no notes for this slide)';
+}
+
+function updateBottom(s){
+  document.getElementById('prevBtn').disabled = current === 0;
+  document.getElementById('nextBtn').disabled = current === SLIDES.length - 1;
+  progressFill.style.width = (((current+1)/SLIDES.length)*100) + '%';
+  countEl.textContent = (current+1) + ' / ' + SLIDES.length;
+}
+
+function goTo(i){
+  current = Math.max(0, Math.min(SLIDES.length-1, i));
+  render();
+}
+
+document.getElementById('prevBtn').addEventListener('click', () => goTo(current-1));
+document.getElementById('nextBtn').addEventListener('click', () => goTo(current+1));
+document.getElementById('progressTrack').addEventListener('click', (e) => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  goTo(Math.round(pct * (SLIDES.length-1)));
+});
+document.getElementById('notesToggle').addEventListener('click', toggleNotes);
+document.getElementById('notesClose').addEventListener('click', toggleNotes);
+
+function toggleNotes(){
+  notesOpen = !notesOpen;
+  notesDrawer.classList.toggle('open', notesOpen);
+  document.getElementById('notesToggle').classList.toggle('on', notesOpen);
+}
+
+document.addEventListener('keydown', (e) => {
+  if(e.key === 'ArrowRight' || e.key === ' '){ goTo(current+1); e.preventDefault(); }
+  else if(e.key === 'ArrowLeft'){ goTo(current-1); }
+  else if(e.key.toLowerCase() === 'n'){ toggleNotes(); }
+  else if(e.key === 'Home'){ goTo(0); }
+  else if(e.key === 'End'){ goTo(SLIDES.length-1); }
+});
+
+let touchStartX = null;
+document.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
+document.addEventListener('touchend', e => {
+  if(touchStartX === null) return;
+  const dx = e.changedTouches[0].clientX - touchStartX;
+  if(dx > 60) goTo(current-1);
+  else if(dx < -60) goTo(current+1);
+  touchStartX = null;
+});
+
+buildPills();
+render();
+</script>
+</body>
+</html>
